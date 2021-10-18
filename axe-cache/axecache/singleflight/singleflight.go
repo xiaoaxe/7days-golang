@@ -36,10 +36,13 @@ func (g *Group) Do(key string, fn func() (interface{}, error)) (interface{}, err
 	g.mu.Unlock()
 
 	// real getting val
+	c.val, c.err = fn()
+	c.wg.Done()
+
+	// rm val so than next call can run
 	g.mu.Lock()
 	delete(g.m, key)
 	g.mu.Unlock()
 
-	// rm val so than next call can run
 	return c.val, c.err
 }

@@ -2,8 +2,9 @@ syntax = "proto3";
 
 package axecachepb;
 
+// protoc --go_out=. *.proto
 message Request {
-    string name = 1;
+    string group = 1;
     string key = 2;
 }
 

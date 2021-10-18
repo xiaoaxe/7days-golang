@@ -3,11 +3,13 @@
 //@time: 2021/10/17 22:54:35
 package axecache
 
+import pb "github.com/xiaoaxe/7days-golang/axe-cache/axecache/axecachepb"
+
 type PeerPicker interface {
 	PickPeer(key string) (peer PeerGetter, ok bool)
 }
 
 // TODO fixme, replace me with pb req&resp
 type PeerGetter interface {
-	Get(in, out []byte) error
+	Get(in *pb.Request, out *pb.Response) error
 }
