@@ -5,7 +5,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -39,8 +38,10 @@ func (f Foo) Sleep(args Args, reply *int) error {
 // register run
 func startRegistry(wg *sync.WaitGroup) {
 	l, _ := net.Listen("tcp", ":9999")
+	// listen http
 	registry.HandleHTTP()
 	wg.Done()
+
 	_ = http.Serve(l, nil)
 }
 
@@ -49,9 +50,17 @@ func startServer(registryAddr string, wg *sync.WaitGroup) {
 	var foo Foo
 	l, _ := net.Listen("tcp", ":0")
 	server := axerpc.NewServer()
+
+	// add server impl method
 	_ = server.Register(&foo)
+
+	// add self to registry
 	registry.Heartbeat(registryAddr, "tcp@"+l.Addr().String(), 0)
+
+	// server started
 	wg.Done()
+
+	// waiting for connect
 	server.Accept(l)
 }
 
@@ -76,8 +85,73 @@ func foo(xc *xclient.XClient, ctx context.Context, typ, serviceMethod string, ar
 	}
 }
 
-// todo call&broadcast&main
+func call(register string) {
+	d := xclient.NewAxeRegistryDiscovery(register, 0)
+	xc := xclient.NewXClient(d, xclient.RandomSelect, nil)
+	defer func() {
+		_ = xc.Close()
+	}()
 
+	var wg sync.WaitGroup
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			foo(xc, context.Background(), "call", "Foo.Sum", &Args{Num1: i, Num2: i + 1})
+		}(i)
+	}
+
+	// wait for complete
+	wg.Wait()
+}
+
+func broadcast(register string) {
+	d := xclient.NewAxeRegistryDiscovery(register, 0)
+	xc := xclient.NewXClient(d, xclient.RandomSelect, nil)
+	defer func() {
+		_ = xc.Close()
+	}()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			foo(xc, context.Background(), "broadcast", "Foo.Sum", &Args{Num1: i, Num2: i + 1})
+			// expect 2-5 timeout
+			ctx, _ := context.WithTimeout(context.Background(), time.Second*2)
+			foo(xc, ctx, "broadcast", "Foo.Sleep", &Args{Num1: i, Num2: i + 1})
+		}(i)
+	}
+
+	// wait for complete
+	wg.Wait()
+}
+
+// debug: http://localhost:52988/debug/axerpc/
 func main() {
-	fmt.Print("aaa")
+	log.SetFlags(0)
+	registryAddr := "http://localhost:9999/_axerpc_/registry"
+
+	var wg sync.WaitGroup
+
+	// registry
+	wg.Add(1)
+	go startRegistry(&wg)
+	wg.Wait()
+
+	// server
+	time.Sleep(time.Second)
+	wg.Add(2)
+	go startServer(registryAddr, &wg)
+	go startServer(registryAddr, &wg)
+	wg.Wait()
+
+	// client
+	time.Sleep(time.Second)
+	call(registryAddr)
+	broadcast(registryAddr)
+
+	// viewing debug
+	// time.Sleep(time.Minute)
 }

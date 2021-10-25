@@ -231,7 +231,7 @@ func Accept(lis net.Listener) {
 // func (exportedMethodName, req, &resp) error
 func (s *Server) Register(rcvr interface{}) error {
 	svc := newService(rcvr)
-	if _, dup := s.serviceMap.LoadOrStore(svc.name, s); dup {
+	if _, dup := s.serviceMap.LoadOrStore(svc.name, svc); dup {
 		return errors.New("rpc: service already defined: " + svc.name)
 	}
 	return nil
@@ -269,7 +269,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (s *Server) HandleHTTP() {
 	http.Handle(defaultRPCPath, s)
-	http.Handle(defaultDebugPath, s) //TODO fixme
+	http.Handle(defaultDebugPath, debugHTTP{s})
 	log.Println("rpc server debug path: ", defaultDebugPath)
 }
 

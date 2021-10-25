@@ -15,7 +15,6 @@ func Recovery() HandleFunc {
 	return func(c *Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				//TODO impl tracelog
 				// debug.PrintStack()
 				msg := fmt.Sprintf("%s", err)
 				log.Printf("%s\n\n", trace(msg))

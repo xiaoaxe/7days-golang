@@ -9,7 +9,6 @@ type PeerPicker interface {
 	PickPeer(key string) (peer PeerGetter, ok bool)
 }
 
-// TODO fixme, replace me with pb req&resp
 type PeerGetter interface {
 	Get(in *pb.Request, out *pb.Response) error
 }

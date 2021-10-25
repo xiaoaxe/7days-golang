@@ -108,7 +108,7 @@ func (e *Engine) setFuncMap(funcMap template.FuncMap) {
 	e.funcMap = funcMap
 }
 
-// TODO 什么作用？
+// 通过通配符的方式加载HTML文件
 func (e *Engine) LoadHTMLGlob(pattern string) {
 	e.htmlTemplates = template.Must(template.New("").Funcs(e.funcMap).ParseGlob(pattern))
 }
