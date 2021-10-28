@@ -22,7 +22,7 @@ func (s *Session) Commit() (err error) {
 	return
 }
 
-func (s *Session) RoolBack() (err error) {
+func (s *Session) RollBack() (err error) {
 	log.Info("transaction rollback")
 	if err = s.tx.Rollback(); err != nil {
 		log.Error(err)
